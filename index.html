@@ -1,9 +1,10 @@
+```html
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>手舞足蹈集團 - 黑名單檢索系統 V1.10</title>
+    <title>手舞足蹈集團 - 黑名單檢索系統 V1.14</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script type="module">
@@ -11,17 +12,28 @@
         import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, addDoc, onSnapshot, query, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = JSON.parse(__firebase_config);
+        // Firebase 專屬配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyCpV4HgNoihd4jc1kDdsUOg-cQiaPPe0iQ",
+            authDomain: "blacklist-ab539.firebaseapp.com",
+            projectId: "blacklist-ab539",
+            storageBucket: "blacklist-ab539.firebasestorage.app",
+            messagingSenderId: "965214081364",
+            appId: "1:965214081364:web:de8d4646e8a76df0acf8c1",
+            measurementId: "G-60DYJE9QVT"
+        };
+
+        // 初始化 Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'talent-v1-10';
+        const appId = "blacklist-ab539"; 
 
         window.appData = {
             auth, db, appId,
             currentUser: null,
             personnel: [],
-            isAdmin: false // 管理者權限狀態
+            isAdmin: false 
         };
 
         const initAuth = async () => {
@@ -40,7 +52,7 @@
                 const q = collection(db, 'artifacts', appId, 'public', 'data', 'personnel');
                 onSnapshot(q, (snapshot) => {
                     window.appData.personnel = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                });
+                }, (err) => console.error("Firebase 連線錯誤:", err));
             }
         });
     </script>
@@ -50,8 +62,6 @@
         .animate-fade { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .admin-only { display: none; }
-        .is-admin .admin-only { display: flex; }
     </style>
 </head>
 <body class="p-0 m-0 text-slate-800 flex flex-col min-h-screen" id="mainBody">
@@ -84,69 +94,75 @@
 
     <main class="max-w-5xl mx-auto p-4 md:p-12 flex-grow w-full">
 
-        <!-- 黑名單作業說明 (恢復為上一版內容) -->
+        <!-- 黑名單作業說明 -->
         <section class="mb-12 space-y-6">
             <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-8 items-center">
                 <div class="flex-1">
-                    <h2 class="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-3">
+                    <h2 class="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-3 text-left">
                         <span class="w-2 h-8 bg-red-600 rounded-full"></span>
                         黑名單作業說明
                     </h2>
-                    <p class="text-slate-500 text-sm leading-relaxed">
+                    <p class="text-slate-500 text-sm leading-relaxed text-left font-medium">
                         本系統採<strong>非公開列舉</strong>形式，僅限精確查核調閱。主要透過身分識別碼與影像紀錄，預防性排除具有風險或誠信缺失之不適用人員。
                     </p>
                 </div>
-                <div class="w-full md:w-72 bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                    <div class="space-y-4 text-center">
-                        <div class="bg-white py-2 rounded-lg shadow-sm text-[11px] font-bold text-slate-600">步驟一：錄入負面紀錄</div>
+                <div class="w-full md:w-72 bg-slate-50 p-5 rounded-2xl border border-slate-100 text-center">
+                    <div class="space-y-4">
+                        <div class="bg-white py-2 rounded-lg shadow-sm text-[11px] font-bold text-slate-600 border border-slate-100">錄入負面紀錄</div>
                         <div class="text-slate-300">▼</div>
-                        <div class="bg-white py-2 rounded-lg shadow-sm text-[11px] font-bold text-slate-600">步驟二：證號精確檢索</div>
+                        <div class="bg-white py-2 rounded-lg shadow-sm text-[11px] font-bold text-slate-600 border border-slate-100">證號精確檢索</div>
                         <div class="text-slate-300">▼</div>
-                        <div class="bg-red-600 py-2 rounded-lg shadow-sm text-[11px] font-bold text-white">步驟三：查核結果顯示</div>
+                        <div class="bg-red-600 py-2 rounded-lg shadow-sm text-[11px] font-bold text-white shadow-red-100">查核結果顯示</div>
                     </div>
                 </div>
             </div>
         </section>
 
         <!-- 核心檢索 -->
-        <section class="space-y-10 animate-fade">
-            <div class="max-w-2xl mx-auto text-center space-y-4">
+        <section class="space-y-10 animate-fade text-center">
+            <div class="max-w-2xl mx-auto space-y-4">
                 <h3 class="text-3xl font-black text-slate-900 tracking-tighter">不適用人員查核</h3>
-                <p class="text-slate-400 text-sm">本系統採<strong>非公開列舉</strong>形式，請輸入身分證字號查詢紀錄</p>
+                <p class="text-slate-400 text-sm">請輸入身分證字號查詢紀錄</p>
             </div>
 
             <!-- 搜尋框 -->
             <div class="max-w-3xl mx-auto search-focus transition-all duration-300">
                 <div class="relative group">
-                    <input type="text" id="blacklistSearchInput" placeholder="請輸入欲查核的身分證字號..." 
+                    <input type="text" id="blacklistSearchInput" placeholder="請輸入身分證字號或姓名..." 
                         class="w-full px-16 py-7 bg-white border border-slate-200 rounded-[2.5rem] text-xl font-mono focus:ring-8 focus:ring-red-50 focus:border-red-200 outline-none shadow-2xl transition-all">
                     <svg class="w-8 h-8 text-red-600 absolute left-6 top-6 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    <button onclick="performSearch()" class="absolute right-4 top-4 bg-red-600 text-white px-8 py-3.5 rounded-3xl font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-200 active:scale-95">
+                    <button onclick="performSearch()" class="absolute right-4 top-4 bg-red-600 text-white px-8 py-3.5 rounded-3xl font-bold hover:bg-red-700 transition-all shadow-lg active:scale-95">
                         調閱檔案
                     </button>
                 </div>
             </div>
 
-            <!-- 管理者專屬按鈕 -->
-            <div class="admin-only flex flex-col md:flex-row justify-center items-center gap-4">
-                <button onclick="browseAll()" class="group bg-slate-900 text-white px-8 py-4 rounded-2xl font-black hover:bg-slate-800 transition-all flex items-center gap-3 shadow-xl">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
-                    瀏覽完整名單
-                </button>
-                <button onclick="toggleModal(true)" class="group bg-white border-2 border-slate-900 text-slate-900 px-8 py-4 rounded-2xl font-black hover:bg-slate-900 hover:text-white transition-all flex items-center gap-3 shadow-lg">
-                    <svg class="w-5 h-5 group-hover:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <!-- 一般模式功能區 (顯示新增) -->
+            <div id="generalActionSection" class="flex flex-col items-center gap-4">
+                <div class="h-px w-20 bg-slate-200"></div>
+                <button onclick="toggleModal(true)" class="group bg-white border-2 border-slate-900 text-slate-900 px-10 py-4 rounded-2xl font-black hover:bg-slate-900 hover:text-white transition-all flex items-center gap-3 shadow-lg">
+                    <svg class="w-6 h-6 group-hover:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                     新增黑名單存檔
+                </button>
+            </div>
+
+            <!-- 管理者模式功能區 (隱藏新增，顯示瀏覽) -->
+            <div id="adminActionSection" class="hidden flex-col items-center gap-4">
+                <div class="h-px w-20 bg-slate-200"></div>
+                <button onclick="browseAll()" class="group bg-slate-900 text-white px-10 py-4 rounded-2xl font-black hover:bg-slate-800 transition-all flex items-center gap-3 shadow-xl">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                    瀏覽完整名單
                 </button>
             </div>
 
             <!-- 查詢結果區域 -->
             <div id="resultsSection" class="max-w-4xl mx-auto hidden pt-4 pb-12">
-                <div class="flex justify-between items-center mb-6 px-4">
+                <div class="flex justify-between items-center mb-6 px-4 text-left">
                     <h4 id="resultTitle" class="text-xs font-bold text-slate-400 uppercase tracking-widest">查詢調閱結果</h4>
-                    <button onclick="clearResults()" class="text-[10px] font-bold text-blue-600 hover:underline">清除目前結果</button>
+                    <button onclick="clearResults()" class="text-[10px] font-bold text-blue-600 hover:underline">清除目前顯示</button>
                 </div>
-                <div id="cardsContainer" class="grid gap-8">
-                    <!-- 調閱結果將顯示在此 -->
+                <div id="cardsContainer" class="grid gap-8 text-left">
+                    <!-- 結果內容 -->
                 </div>
             </div>
         </section>
@@ -154,8 +170,8 @@
     </main>
 
     <!-- 法律警語區域 -->
-    <footer class="bg-white border-t border-slate-200 py-12">
-        <div class="max-w-5xl mx-auto px-8">
+    <footer class="bg-white border-t border-slate-200 py-12 mt-auto">
+        <div class="max-w-5xl mx-auto px-8 text-left">
             <div class="bg-red-50/40 border-l-4 border-red-600 p-8 rounded-r-3xl">
                 <div class="flex items-start gap-5">
                     <div class="mt-1 text-red-600">
@@ -173,7 +189,7 @@
                         </div>
                         <div class="pt-4 border-t border-red-100">
                             <p class="text-sm font-black text-red-600">查詢紀錄</p>
-                            <p class="text-[10px] text-slate-400 mt-1 uppercase">內部查核行為已全數留存稽核日誌</p>
+                            <p class="text-[10px] text-slate-400 mt-1 uppercase font-bold">內部查核行為已全數留存稽核日誌</p>
                         </div>
                     </div>
                 </div>
@@ -182,11 +198,11 @@
     </footer>
 
     <!-- 新增黑名單 Modal -->
-    <div id="entryModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md hidden flex items-center justify-center z-[100] p-4">
+    <div id="entryModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md hidden flex items-center justify-center z-[100] p-4 text-left">
         <div class="bg-white w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
             <div class="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <div>
-                    <h3 class="text-2xl font-black text-slate-900">黑名單負面清單建檔</h3>
+                    <h3 class="text-2xl font-black text-slate-900 tracking-tight">黑名單負面清單建檔</h3>
                     <p class="text-xs text-red-500 font-bold mt-1">請務必核對身分證字號，並上傳佐證影像。</p>
                 </div>
                 <button onclick="toggleModal(false)" class="bg-white p-3 rounded-full shadow-sm hover:scale-110 transition-transform">
@@ -194,7 +210,7 @@
                 </button>
             </div>
             
-            <form id="blacklistForm" class="p-8 space-y-8 overflow-y-auto flex-1 scrollbar-hide">
+            <form id="blacklistForm" class="p-8 space-y-8 overflow-y-auto flex-1 scrollbar-hide text-left">
                 <input type="hidden" name="id" id="editingId">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
                     <div class="space-y-5">
@@ -229,17 +245,17 @@
                     </div>
 
                     <div class="space-y-5">
-                        <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest border-b pb-2">影像佐證與說明</h4>
+                        <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest border-b pb-2">佐證影像與說明</h4>
                         <div class="border-4 border-dashed border-slate-100 rounded-[2rem] p-6 text-center hover:bg-slate-50 transition-colors">
                             <input type="file" id="imageInput" multiple accept="image/*" class="hidden">
                             <label for="imageInput" class="cursor-pointer block">
                                 <svg class="w-12 h-12 text-slate-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                <p class="text-[11px] font-bold text-slate-400">點擊上傳佐證圖檔 (上限5張)</p>
+                                <p class="text-[11px] font-bold text-slate-400">點擊上傳圖檔 (上限5張)</p>
                             </label>
                         </div>
                         <div id="imagePreviewContainer" class="flex flex-wrap gap-2 min-h-[60px]"></div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-2">不適用原因說明</label>
+                            <label class="block text-xs font-bold text-slate-500 mb-2">原因說明</label>
                             <textarea name="notes" rows="4" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs"></textarea>
                         </div>
                     </div>
@@ -247,27 +263,27 @@
 
                 <div class="pt-8">
                     <button type="submit" class="w-full bg-red-600 text-white py-5 rounded-3xl font-black shadow-2xl shadow-red-100 hover:bg-red-700 transition-all flex items-center justify-center gap-4 text-xl">
-                        確認並發布黑名單紀錄
+                        確認並儲存紀錄
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 密碼輸入 Modal -->
-    <div id="passwordModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-[100] p-4">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full animate-fade text-center">
+    <!-- 管理者密碼驗證 Modal -->
+    <div id="passwordModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-[100] p-4 text-center">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full animate-fade">
             <h3 class="text-lg font-black text-slate-900 mb-4">管理者身分驗證</h3>
-            <p class="text-xs text-slate-400 mb-4">請輸入 4 位數授權密碼</p>
+            <p class="text-xs text-slate-400 mb-4 font-medium">請輸入 4 位數授權密碼</p>
             <input type="password" id="adminPassword" maxlength="4" placeholder="••••" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-red-100 mb-4 font-mono text-center text-2xl tracking-[1rem]">
             <div class="flex gap-2">
-                <button onclick="closePasswordModal()" class="flex-1 py-3 text-sm font-bold text-slate-400 hover:bg-slate-50 rounded-xl">取消</button>
-                <button onclick="checkAdminPassword()" class="flex-1 py-3 text-sm font-bold bg-slate-900 text-white rounded-xl shadow-lg">確認授權</button>
+                <button onclick="closePasswordModal()" class="flex-1 py-3 text-sm font-bold text-slate-400 hover:bg-slate-50 rounded-xl transition-colors">取消</button>
+                <button onclick="checkAdminPassword()" class="flex-1 py-3 text-sm font-bold bg-slate-900 text-white rounded-xl shadow-lg hover:bg-slate-800 transition-colors">確認授權</button>
             </div>
         </div>
     </div>
 
-    <!-- 圖片查看 Modal -->
+    <!-- 圖片放大 Modal -->
     <div id="imageModal" class="fixed inset-0 bg-black/95 hidden z-[200] flex items-center justify-center p-4" onclick="this.classList.add('hidden')">
         <img id="fullImage" src="" class="max-w-full max-h-full rounded-2xl shadow-2xl border-4 border-white/10">
     </div>
@@ -275,7 +291,7 @@
     <script>
         let uploadedImages = [];
 
-        // 管理者密碼邏輯
+        // 管理者驗證邏輯
         function promptAdmin() {
             document.getElementById('passwordModal').classList.remove('hidden');
             document.getElementById('adminPassword').focus();
@@ -293,31 +309,41 @@
                 updateAdminUI();
                 closePasswordModal();
             } else {
-                alert('密碼錯誤，請重新輸入。');
+                alert('密碼錯誤。');
                 document.getElementById('adminPassword').value = '';
             }
         }
 
         function updateAdminUI() {
+            const adminSection = document.getElementById('adminActionSection');
+            const generalSection = document.getElementById('generalActionSection');
+            const adminStatus = document.getElementById('adminStatus');
+            const loginBtn = document.getElementById('loginBtn');
+
             if (window.appData.isAdmin) {
-                document.getElementById('mainBody').classList.add('is-admin');
-                document.getElementById('adminStatus').classList.remove('hidden');
-                document.getElementById('adminStatus').classList.add('flex');
-                document.getElementById('loginBtn').classList.add('hidden');
+                // 管理者模式：隱藏新增按鈕，顯示瀏覽按鈕
+                generalSection.classList.add('hidden');
+                adminSection.classList.remove('hidden');
+                adminSection.classList.add('flex');
+                
+                adminStatus.classList.remove('hidden');
+                adminStatus.classList.add('flex');
+                loginBtn.classList.add('hidden');
             } else {
-                document.getElementById('mainBody').classList.remove('is-admin');
-                document.getElementById('adminStatus').classList.add('hidden');
-                document.getElementById('loginBtn').classList.remove('hidden');
+                // 一般模式：顯示新增按鈕，隱藏瀏覽按鈕
+                generalSection.classList.remove('hidden');
+                adminSection.classList.add('hidden');
+                adminSection.classList.remove('flex');
+                
+                adminStatus.classList.add('hidden');
+                loginBtn.classList.remove('hidden');
             }
-            // 重新渲染查詢結果
-            const queryVal = document.getElementById('blacklistSearchInput').value.trim();
-            if (queryVal || document.getElementById('resultTitle').innerText.includes('完整')) {
-                const results = window.appData.personnel.filter(p => p.status === 'unsuitable');
-                if (document.getElementById('resultTitle').innerText.includes('完整')) {
-                    renderResults(results);
-                } else if (queryVal) {
-                    performSearch();
-                }
+            
+            // 如果當前已有搜尋結果，重新渲染以更新編輯權限
+            if (!document.getElementById('resultsSection').classList.contains('hidden')) {
+                const queryVal = document.getElementById('blacklistSearchInput').value.trim();
+                if (queryVal) performSearch();
+                else if (document.getElementById('resultTitle').innerText.includes('完整')) browseAll();
             }
         }
 
@@ -327,7 +353,7 @@
             clearResults();
         }
 
-        // 調閱邏輯
+        // 核心檢索邏輯
         function performSearch() {
             const queryVal = document.getElementById('blacklistSearchInput').value.trim().toUpperCase();
             if (!queryVal) return;
@@ -337,14 +363,14 @@
                 p.status === 'unsuitable'
             );
 
-            document.getElementById('resultTitle').innerText = `身分證字號 ${queryVal} 之調閱結果`;
+            document.getElementById('resultTitle').innerText = `身分證字號 ${queryVal} 調閱結果`;
             renderResults(results);
         }
 
         function browseAll() {
             if (!window.appData.isAdmin) return;
             const results = window.appData.personnel.filter(p => p.status === 'unsuitable');
-            document.getElementById('resultTitle').innerText = `完整黑名單清單 (共 ${results.length} 筆)`;
+            document.getElementById('resultTitle').innerText = `完整名單調閱 (共 ${results.length} 筆)`;
             renderResults(results);
         }
 
@@ -355,12 +381,7 @@
             section.classList.remove('hidden');
 
             if (results.length === 0) {
-                container.innerHTML = `
-                    <div class="bg-white border border-slate-100 p-16 rounded-[3rem] text-center animate-fade shadow-sm">
-                        <p class="text-slate-400 font-bold text-lg italic">查無黑名單紀錄</p>
-                        <p class="text-slate-300 text-sm mt-2">該人員目前於風險庫中並無負面紀錄。</p>
-                    </div>
-                `;
+                container.innerHTML = `<div class="bg-white border p-16 rounded-[3rem] text-center text-slate-400 italic">查無黑名單紀錄</div>`;
             } else {
                 results.forEach(p => {
                     const card = createBlacklistCard(p);
@@ -382,39 +403,38 @@
             
             const adminActions = window.appData.isAdmin ? `
                 <div class="flex gap-4 items-center">
-                    <button onclick='editEntry(${JSON.stringify(p).replace(/'/g, "&apos;")})' class="bg-slate-900 text-white px-8 py-3 rounded-2xl text-xs font-bold hover:shadow-xl transition-all">更新紀錄</button>
-                    <button onclick="deleteEntry('${p.id}')" class="text-slate-300 hover:text-red-500 text-[10px] font-bold">永久刪除</button>
-                </div>
-            ` : '';
+                    <button onclick='editEntry(${JSON.stringify(p).replace(/'/g, "&apos;")})' class="bg-slate-900 text-white px-8 py-3 rounded-2xl text-xs font-bold hover:shadow-lg transition-all">更新紀錄</button>
+                    <button onclick="deleteEntry('${p.id}')" class="text-red-500 text-[10px] font-bold hover:underline">永久刪除</button>
+                </div>` : '';
 
             card.innerHTML = `
                 <div class="absolute top-0 right-0 bg-red-600 text-white px-8 py-2 text-[11px] font-black uppercase rounded-bl-[2rem]">● 嚴禁錄用人員</div>
-                <div class="flex flex-col md:flex-row gap-10">
+                <div class="flex flex-col md:flex-row gap-10 text-left">
                     <div class="flex-1 space-y-8">
                         <div>
-                            <div class="flex items-center gap-5 mb-2">
+                            <div class="flex items-center gap-5 mb-2 text-left">
                                 <h5 class="text-3xl font-black text-slate-900">${p.name}</h5>
-                                <span class="px-4 py-1.5 bg-red-50 text-red-600 rounded-full text-xs font-mono font-bold border border-red-100">${p.idNumber}</span>
+                                <span class="px-4 py-1.5 bg-red-50 text-red-600 rounded-full text-xs font-mono font-bold border border-red-50">${p.idNumber}</span>
                             </div>
-                            <p class="text-slate-400 font-bold uppercase tracking-widest text-sm">${p.title} · ${p.category === 'master' ? '專業師傅' : '一般員工'}</p>
+                            <p class="text-slate-400 font-bold uppercase tracking-widest text-sm text-left">${p.title} · ${p.category === 'master' ? '專業師傅' : '一般員工'}</p>
                         </div>
 
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-left">
                             <div class="bg-slate-50 p-4 rounded-3xl"><p class="text-[10px] text-slate-400 font-bold uppercase">曾任職年資</p><p class="text-sm font-black text-slate-800">${seniority}</p></div>
                             <div class="bg-slate-50 p-4 rounded-3xl"><p class="text-[10px] text-slate-400 font-bold uppercase">入職日</p><p class="text-sm font-black text-slate-800">${p.hireDate || '-'}</p></div>
                             <div class="bg-slate-50 p-4 rounded-3xl"><p class="text-[10px] text-slate-400 font-bold uppercase">離職日</p><p class="text-sm font-black text-slate-800">${p.leaveDate || '-'}</p></div>
                         </div>
 
-                        <div class="bg-red-50/30 p-6 rounded-[2rem] border border-red-50">
+                        <div class="bg-red-50/30 p-6 rounded-[2rem] border border-red-50 text-left">
                             <p class="text-[11px] font-black text-red-600 mb-3 uppercase tracking-widest">查閱備註理由</p>
-                            <p class="text-slate-700 text-sm leading-relaxed font-medium">${p.notes || '無具體描述紀錄。'}</p>
+                            <p class="text-slate-700 text-sm leading-relaxed font-medium text-left">${p.notes || '無具體描述紀錄。'}</p>
                         </div>
 
                         ${adminActions}
                     </div>
                     
                     <div class="md:w-64 space-y-5 text-center">
-                        <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">數位影像存檔</p>
+                        <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">數位影像存檔</p>
                         <div class="grid grid-cols-1 gap-3">
                             ${(p.images || []).map(img => `<img src="${img}" class="w-full h-40 object-cover rounded-[2rem] border-2 border-slate-50 cursor-pointer shadow-sm hover:scale-105 transition-transform" onclick="showFullImage('${img}')">`).join('')}
                             ${!(p.images?.length) ? '<div class="h-40 bg-slate-50 rounded-[2rem] border-4 border-dashed border-slate-100 flex items-center justify-center text-[10px] text-slate-300 italic">無影像存檔</div>' : ''}
@@ -425,6 +445,7 @@
             return card;
         }
 
+        // 年資計算
         function calculateSeniority(hire, leave) {
             if (!hire) return "-";
             const start = new Date(hire);
@@ -432,10 +453,10 @@
             let years = end.getFullYear() - start.getFullYear();
             let months = end.getMonth() - start.getMonth();
             if (months < 0) { years--; months += 12; }
-            if (years === 0 && months === 0) return "未滿1月";
-            return `${years > 0 ? years + '年' : ''}${months > 0 ? months + '月' : ''}`;
+            return `${years > 0 ? years + '年' : ''}${months > 0 ? months + '月' : '未滿1月'}`;
         }
 
+        // 圖片處理邏輯
         document.getElementById('imageInput').addEventListener('change', function(e) {
             const files = Array.from(e.target.files);
             const limit = 5 - uploadedImages.length;
@@ -455,10 +476,7 @@
             uploadedImages.forEach((src, idx) => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'relative';
-                wrapper.innerHTML = `
-                    <img src="${src}" class="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-sm">
-                    <button type="button" onclick="removeImage(${idx})" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 text-[8px] shadow-lg">×</button>
-                `;
+                wrapper.innerHTML = `<img src="${src}" class="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-sm"><button type="button" onclick="removeImage(${idx})" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 text-[8px] shadow-lg">×</button>`;
                 container.appendChild(wrapper);
             });
         }
@@ -466,18 +484,17 @@
         function removeImage(idx) { uploadedImages.splice(idx, 1); renderImagePreviews(); }
         function showFullImage(src) { document.getElementById('fullImage').src = src; document.getElementById('imageModal').classList.remove('hidden'); }
 
+        // Modal 操作
         function toggleModal(show) {
             const modal = document.getElementById('entryModal');
-            if (show) {
-                modal.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
-            } else {
-                modal.classList.add('hidden');
-                document.body.style.overflow = 'auto';
-                document.getElementById('blacklistForm').reset();
+            if (show) { modal.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+            else { 
+                modal.classList.add('hidden'); 
+                document.body.style.overflow = 'auto'; 
+                document.getElementById('blacklistForm').reset(); 
                 document.getElementById('editingId').value = '';
-                uploadedImages = [];
-                renderImagePreviews();
+                uploadedImages = []; 
+                renderImagePreviews(); 
             }
         }
 
@@ -502,32 +519,25 @@
             const rawData = Object.fromEntries(formData.entries());
             const docId = rawData.id;
             delete rawData.id;
-            const finalData = {
-                ...rawData,
-                status: 'unsuitable',
-                idNumber: rawData.idNumber.toUpperCase(),
-                hasViolation: true,
-                images: uploadedImages,
-                updatedAt: Date.now()
-            };
+            const finalData = { ...rawData, status: 'unsuitable', idNumber: rawData.idNumber.toUpperCase(), hasViolation: true, images: uploadedImages, updatedAt: Date.now() };
             try {
                 const { db, appId } = window.appData;
                 const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'personnel');
                 if (docId) await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'personnel', docId), finalData);
                 else { finalData.createdAt = Date.now(); await addDoc(colRef, finalData); }
                 toggleModal(false);
-                alert("資料已更新同步");
-            } catch (err) { alert("儲存失敗。"); }
+                alert("資料儲存成功。");
+            } catch (err) { console.error("存檔失敗:", err); }
         };
 
         async function deleteEntry(id) {
-            if (!confirm('確定要永久刪除此黑名單紀錄嗎？')) return;
+            if (!confirm('確定永久刪除？此筆資料將從風險資料庫移除。')) return;
             try {
                 const { db, appId } = window.appData;
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'personnel', id));
                 if (document.getElementById('resultTitle').innerText.includes('完整')) browseAll();
                 else clearResults();
-            } catch (err) { console.error(err); }
+            } catch (err) { console.error("刪除失敗:", err); }
         }
 
         document.getElementById('blacklistSearchInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
